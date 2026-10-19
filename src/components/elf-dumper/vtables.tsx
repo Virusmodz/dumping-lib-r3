@@ -2,91 +2,67 @@
 
 import { useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ChevronRight, Search, Table2, Info } from 'lucide-react';
+import { ChevronRight, Search } from 'lucide-react';
 import type { ElfVtable } from '@/lib/elf-dumper';
 
 interface VtablesProps {
   vtables: ElfVtable[];
 }
 
-function VtableCard({ vt, query }: { vt: ElfVtable; query: string }) {
+function VtableRow({ vt, query }: { vt: ElfVtable; query: string }) {
   const [open, setOpen] = useState(false);
   const active = query !== '';
 
   return (
-    <div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/50 transition-colors hover:border-zinc-700">
+    <div>
       <button
         type="button"
         aria-expanded={open || active}
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-zinc-800/60"
+        className="flex w-full items-center gap-1.5 px-4 py-[7px] text-left transition-colors hover:bg-accent/60"
       >
         <ChevronRight
-          className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform duration-200 ${
-            open || active ? 'rotate-90 text-emerald-500' : ''
+          className={`h-3.5 w-3.5 shrink-0 text-muted-foreground/60 transition-transform ${
+            open || active ? 'rotate-90' : ''
           }`}
           aria-hidden="true"
         />
-        <Table2 className="h-4 w-4 shrink-0 text-amber-600" aria-hidden="true" />
-        <span className="min-w-0 flex-1 truncate font-mono text-sm text-zinc-200">
+        <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground/90">
           {vt.cls}
         </span>
-        <span className="hidden shrink-0 font-mono text-[11px] text-amber-500/80 sm:inline">
+        <span className="hidden shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground/70 sm:inline">
           {vt.o}
         </span>
-        <Badge
-          variant="outline"
-          className="ml-2 shrink-0 border-amber-900/60 bg-amber-950/40 font-mono text-[10px] text-amber-400"
-        >
-          {vt.e.length} vfns
-        </Badge>
+        <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+          {vt.e.length}
+        </span>
       </button>
 
       {(open || active) && (
-        <div className="border-t border-zinc-800/80 bg-zinc-950/60">
-          <div className="flex flex-wrap gap-x-4 gap-y-1 px-3 py-2 font-mono text-[11px] text-zinc-500">
-            <span>
-              typeinfo: <span className="text-zinc-300">{vt.rtti}</span>
-            </span>
-            <span>
-              size: <span className="text-zinc-300">{vt.s} B</span>
-            </span>
+        <div className="pb-2">
+          <div className="flex gap-4 px-4 pb-1 pl-10 font-mono text-[11px] text-muted-foreground/70">
+            <span>typeinfo: {vt.rtti}</span>
+            <span>size: {vt.s} B</span>
           </div>
-          <table className="w-full">
-            <thead>
-              <tr className="border-t border-zinc-800/60">
-                <th className="w-14 px-3 py-1.5 text-left font-mono text-[10px] font-normal uppercase tracking-wider text-zinc-600">
-                  slot
-                </th>
-                <th className="px-3 py-1.5 text-left font-mono text-[10px] font-normal uppercase tracking-wider text-zinc-600">
-                  virtual function
-                </th>
-                <th className="hidden px-3 py-1.5 text-right font-mono text-[10px] font-normal uppercase tracking-wider text-zinc-600 sm:table-cell">
-                  target
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {vt.e.map((e) => (
-                <tr
-                  key={e.i}
-                  className="border-t border-zinc-800/40 transition-colors hover:bg-zinc-900/60"
-                >
-                  <td className="px-3 py-1.5 font-mono text-[11px] text-emerald-600">
-                    [{e.i}]
-                  </td>
-                  <td className="max-w-0 truncate px-3 py-1.5 font-mono text-xs text-zinc-300">
-                    {e.m}
-                  </td>
-                  <td className="hidden whitespace-nowrap px-3 py-1.5 text-right font-mono text-[11px] text-amber-500/80 sm:table-cell">
-                    {e.t}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {vt.e.map((e) => (
+            <div
+              key={e.i}
+              className="flex items-center justify-between gap-4 py-1 pl-10 pr-4 transition-colors hover:bg-accent/40"
+            >
+              <span className="flex min-w-0 items-center gap-3">
+                <span className="w-6 shrink-0 text-right font-mono text-[11px] tabular-nums text-muted-foreground/50">
+                  {e.i}
+                </span>
+                <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
+                  {e.m}
+                </span>
+              </span>
+              <span className="hidden shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground/70 sm:inline">
+                {e.t}
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -112,55 +88,41 @@ export function Vtables({ vtables }: VtablesProps) {
       .filter((v): v is ElfVtable => v !== null);
   }, [vtables, query]);
 
-  const totalSlots = useMemo(
-    () => filtered.reduce((n, v) => n + v.e.length, 0),
-    [filtered]
-  );
-
   return (
-    <div className="flex h-full flex-col gap-3">
-      <div className="relative">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="relative shrink-0 border-b">
         <Search
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+          className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/70"
           aria-hidden="true"
         />
         <Input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Filter vtables & virtual functions..."
-          className="border-zinc-700 bg-zinc-900 pl-9 font-mono text-sm text-zinc-200 placeholder:text-zinc-600 focus-visible:ring-emerald-500"
+          placeholder="Filter vtables and virtual functions"
+          className="h-10 rounded-none border-0 bg-transparent pl-9 text-xs shadow-none focus-visible:ring-0 focus-visible:border-transparent dark:bg-transparent"
           aria-label="Filter vtables"
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[11px] text-zinc-500">
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[11px] tabular-nums text-muted-foreground/70">
           {filtered.length}/{vtables.length}
         </span>
       </div>
 
-      <ScrollArea className="h-[420px] flex-1 rounded-lg border border-zinc-800/60 bg-zinc-950/40 p-2">
+      <ScrollArea className="min-h-0 flex-1">
         {vtables.length === 0 ? (
-          <div className="space-y-2 py-10 text-center">
-            <Info className="mx-auto h-5 w-5 text-zinc-600" aria-hidden="true" />
-            <p className="font-mono text-sm text-zinc-500">
-              no vtables in this image (no polymorphic C++ classes)
-            </p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <p className="py-10 text-center font-mono text-sm text-zinc-500">
-            no vtables match <span className="text-emerald-500">&quot;{query}&quot;</span>
+          <p className="py-12 text-center text-xs text-muted-foreground">
+            No vtables in this image
           </p>
+        ) : filtered.length === 0 ? (
+          <p className="py-12 text-center text-xs text-muted-foreground">No matches</p>
         ) : (
-          <div className="space-y-2">
+          <div>
             {filtered.map((vt) => (
-              <VtableCard key={`${vt.mn}-${vt.o}`} vt={vt} query={query.trim()} />
+              <VtableRow key={`${vt.mn}-${vt.o}`} vt={vt} query={query.trim()} />
             ))}
           </div>
         )}
       </ScrollArea>
-
-      <p className="font-mono text-[11px] text-zinc-600">
-        {`// vtables rebuilt from _ZTV symbols + relocations (Itanium ABI) · ${totalSlots} virtual slots resolved`}
-      </p>
     </div>
   );
 }

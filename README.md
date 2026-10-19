@@ -8,7 +8,7 @@ core being the original **Dumping LIB R3** C++ tool compiled to WebAssembly.
 Everything runs **100% client-side**. No uploads, no server, no telemetry —
 your binaries never leave your machine.
 
-![Landing](docs/screenshots/landing.png)
+![Classes](docs/screenshots/classes.png)
 
 ## Features
 
@@ -33,7 +33,7 @@ your binaries never leave your machine.
   main-thread fallback, so even 200 MB libraries keep the UI responsive.
 - **Privacy** — there is no backend at all. The WASM binary does the parsing.
 
-![Dump output](docs/screenshots/dump-libstdcxx.png)
+![Dump output](docs/screenshots/dump.png)
 ![Vtables](docs/screenshots/vtables.png)
 ![Mobile](docs/screenshots/mobile.png)
 

@@ -2,8 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { UploadZone } from '@/components/elf-dumper/upload-zone';
@@ -12,7 +10,7 @@ import { ClassExplorer } from '@/components/elf-dumper/class-explorer';
 import { DumpView } from '@/components/elf-dumper/dump-view';
 import { SymbolsTab } from '@/components/elf-dumper/symbols-tab';
 import { Vtables } from '@/components/elf-dumper/vtables';
-import { FileSidebar, type BatchItem } from '@/components/elf-dumper/file-sidebar';
+import { FileTabs, type BatchItem } from '@/components/elf-dumper/file-tabs';
 import { ExportMenu } from '@/components/elf-dumper/export-menu';
 import {
   analyzeFile,
@@ -20,7 +18,7 @@ import {
   preloadDumper,
   type AnalyzeSuccess,
 } from '@/lib/elf-dumper';
-import { Boxes, FileWarning, ShieldCheck, Table2, Zap } from 'lucide-react';
+import { Github, TriangleAlert } from 'lucide-react';
 
 const SAMPLE_URL = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/sample/game-sdk.so`;
 const SAMPLE_SIZE = 23088;
@@ -45,14 +43,18 @@ export default function Home() {
   }, []);
 
   const active = entries.find((e) => e.id === activeId) || null;
-  const anyBusy = entries.some((e) => e.status === 'analyzing' || e.status === 'queued');
+
+  /** Mirror of entries so drainQueue always sees the latest state. */
+  const entriesRef = useRef<BatchEntry[]>([]);
+  useEffect(() => {
+    entriesRef.current = entries;
+  }, [entries]);
 
   /** Sequentially drain the queue of pending entries. */
   const drainQueue = useCallback(async () => {
     if (processingRef.current) return;
     processingRef.current = true;
     try {
-      // loop until no entry is left in 'queued'
       for (;;) {
         const next = entriesRef.current.find((e) => e.status === 'queued');
         if (!next) break;
@@ -90,23 +92,16 @@ export default function Home() {
         );
         if (res.ok) {
           toast({
-            title: 'Dump complete',
-            description: `${res.fileName}: ${res.analysis.classCount} classes, ${res.analysis.funcCount} functions, ${res.analysis.vtableCount} vtables`,
+            title: 'Analysis complete',
+            description: `${res.fileName} — ${res.analysis.classCount} classes, ${res.analysis.vtableCount} vtables`,
           });
         }
-        // switch view to the first finished item of the newest batch
         setActiveId((cur) => (cur === null || cur === next.id ? next.id : cur));
       }
     } finally {
       processingRef.current = false;
     }
   }, [toast]);
-
-  // entriesRef mirror so drainQueue sees the latest state
-  const entriesRef = useRef<BatchEntry[]>([]);
-  useEffect(() => {
-    entriesRef.current = entries;
-  }, [entries]);
 
   const enqueueFiles = useCallback(
     (files: File[]) => {
@@ -121,7 +116,6 @@ export default function Home() {
       if (entriesRef.current.length === 0) {
         setActiveId(newEntries[0]?.id ?? null);
       }
-      // give state a tick to flush before draining
       setTimeout(() => void drainQueue(), 0);
     },
     [drainQueue]
@@ -156,8 +150,8 @@ export default function Home() {
       );
       if (r.ok) {
         toast({
-          title: 'Dump complete',
-          description: `game-sdk.so: ${r.analysis.classCount} classes, ${r.analysis.vtableCount} vtables, ${r.analysis.objectCount} globals`,
+          title: 'Analysis complete',
+          description: `game-sdk.so — ${r.analysis.classCount} classes, ${r.analysis.vtableCount} vtables`,
         });
       }
     } catch (e) {
@@ -180,60 +174,12 @@ export default function Home() {
     });
   }, []);
 
-  const clearAll = useCallback(() => {
-    setEntries([]);
-    setActiveId(null);
-  }, []);
+  // Hidden input used by the tab-bar "+" button
+  const onAddClick = useCallback(() => addInputRef.current?.click(), []);
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-950 text-zinc-100">
-      {/* subtle grid backdrop */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 opacity-[0.35]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(24, 24, 27, 0.9) 1px, transparent 1px), linear-gradient(90deg, rgba(24, 24, 27, 0.9) 1px, transparent 1px)',
-          backgroundSize: '32px 32px',
-        }}
-      />
-
-      <header className="relative z-10 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-emerald-500/40 bg-emerald-500/10 font-mono text-sm font-bold text-emerald-400"
-              aria-hidden="true"
-            >
-              R3
-            </div>
-            <div>
-              <h1 className="font-mono text-base font-semibold tracking-tight text-zinc-50 sm:text-lg">
-                Dumping LIB <span className="text-emerald-500">R3</span>
-                <span className="ml-2 rounded border border-emerald-800/60 bg-emerald-950/60 px-1.5 py-0.5 align-middle font-mono text-[10px] font-normal text-emerald-400">
-                  WebAssembly Edition
-                </span>
-              </h1>
-              <p className="font-mono text-[11px] text-zinc-500">
-                ELF class dumper · vtables · globals · batch — C++ core compiled to wasm
-              </p>
-            </div>
-          </div>
-
-          <div className="hidden items-center gap-4 font-mono text-[11px] text-zinc-500 md:flex">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
-              100% client-side
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5 text-amber-600" aria-hidden="true" />
-              web worker engine
-            </span>
-          </div>
-        </div>
-      </header>
-
-      {/* hidden input used by the sidebar "add" button */}
+    <div className="flex h-dvh flex-col overflow-hidden">
+      {/* hidden file input */}
       <input
         ref={addInputRef}
         type="file"
@@ -249,171 +195,155 @@ export default function Home() {
         }}
       />
 
-      <main className="relative z-10 mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
-        {entries.length === 0 ? (
-          <>
-            <section aria-label="Introduction" className="mb-8 space-y-4 text-center">
-              <h2 className="mx-auto max-w-2xl font-mono text-xl text-zinc-100 sm:text-2xl">
-                Reverse-engineer native libraries into{' '}
-                <span className="text-emerald-400">C++ class skeletons</span>
-              </h2>
-              <p className="mx-auto max-w-2xl font-mono text-sm leading-relaxed text-zinc-500">
-                Drop ELF images (Android <span className="text-zinc-300">.so</span>,{' '}
-                <span className="text-zinc-300">.o</span>, <span className="text-zinc-300">.a</span>)
-                and this tool extracts every symbol, demangles the names, rebuilds the class
-                structure with method offsets <span className="text-amber-600">and vtables</span> —
-                the original CLI logic, now running in your browser via WebAssembly.
-              </p>
-            </section>
-            <UploadZone
-              onFiles={enqueueFiles}
-              onSample={onSample}
-              busy={sampleBusy}
-              sampleSize={SAMPLE_SIZE}
-            />
-          </>
-        ) : (
-          <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-            <aside aria-label="Analyzed files">
-              <FileSidebar
-                items={entries}
-                activeId={activeId}
-                onSelect={setActiveId}
-                onRemove={removeEntry}
-                onClear={clearAll}
-                onAdd={() => addInputRef.current?.click()}
-              />
-            </aside>
-
-            <section aria-label="Analysis result" className="min-w-0 space-y-6">
-              {active === null && (
-                <p className="py-16 text-center font-mono text-sm text-zinc-500">
-                  select a file to view its analysis
-                </p>
-              )}
-
-              {active?.status === 'queued' && (
-                <p className="py-16 text-center font-mono text-sm text-zinc-500">
-                  <span className="text-emerald-500">{active.fileName}</span> is queued…
-                </p>
-              )}
-
-              {active?.status === 'analyzing' && (
-                <div className="space-y-4" aria-busy="true" aria-label="Parsing">
-                  <div className="flex items-center justify-center gap-3 py-6">
-                    <span className="h-4 w-4 animate-pulse rounded-full bg-emerald-500" />
-                    <p className="font-mono text-sm text-emerald-400">
-                      scanning symbol tables · demangling · rebuilding vtables…
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Skeleton className="h-8 w-3/4 bg-zinc-800/70" />
-                    <Skeleton className="h-8 w-1/2 bg-zinc-800/70" />
-                    <Skeleton className="h-40 w-full bg-zinc-800/50" />
-                  </div>
-                </div>
-              )}
-
-              {active?.status === 'error' && (
-                <Alert variant="destructive" className="border-red-900/60 bg-red-950/40">
-                  <FileWarning className="h-4 w-4" aria-hidden="true" />
-                  <AlertTitle className="font-mono">Analysis failed — {active.fileName}</AlertTitle>
-                  <AlertDescription className="font-mono text-xs">
-                    {active.error}
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {active?.status === 'done' && active.result && (
-                <>
-                  <StatsBar
-                    fileName={active.result.fileName}
-                    fileSize={active.result.fileSize}
-                    analysis={active.result.analysis}
-                    durationMs={active.result.durationMs}
-                    engine={active.result.engine}
-                  />
-
-                  <div className="flex justify-end">
-                    <ExportMenu result={active.result} />
-                  </div>
-
-                  <Tabs defaultValue="explorer" className="w-full">
-                    <TabsList className="border border-zinc-800 bg-zinc-900/70 font-mono">
-                      <TabsTrigger
-                        value="explorer"
-                        className="font-mono text-xs data-[state=active]:bg-emerald-950/60 data-[state=active]:text-emerald-300"
-                      >
-                        <Boxes className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                        <span className="hidden sm:inline">Class Explorer</span>
-                        <span className="sm:hidden">Classes</span>
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="vtables"
-                        className="font-mono text-xs data-[state=active]:bg-amber-950/40 data-[state=active]:text-amber-300"
-                      >
-                        <Table2 className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                        <span className="hidden sm:inline">Vtables</span>
-                        <span className="sm:hidden">Vtables</span>
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="symbols"
-                        className="font-mono text-xs data-[state=active]:bg-emerald-950/60 data-[state=active]:text-emerald-300"
-                      >
-                        Symbols
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="dump"
-                        className="font-mono text-xs data-[state=active]:bg-emerald-950/60 data-[state=active]:text-emerald-300"
-                      >
-                        dump.cpp
-                      </TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="explorer" className="mt-4">
-                      <ClassExplorer classes={active.result.analysis.classes} />
-                    </TabsContent>
-
-                    <TabsContent value="vtables" className="mt-4">
-                      <Vtables vtables={active.result.analysis.vtables} />
-                    </TabsContent>
-
-                    <TabsContent value="symbols" className="mt-4">
-                      <SymbolsTab
-                        freeFuncs={active.result.analysis.freeFuncs}
-                        objects={active.result.analysis.objects}
-                      />
-                    </TabsContent>
-
-                    <TabsContent value="dump" className="mt-4">
-                      <DumpView
-                        dump={active.result.dump}
-                        classCount={
-                          active.result.analysis.dumpClassCount ??
-                          active.result.analysis.classCount
-                        }
-                      />
-                    </TabsContent>
-                  </Tabs>
-                </>
-              )}
-            </section>
-          </div>
-        )}
-      </main>
-
-      <footer className="relative z-10 mt-auto border-t border-zinc-800/80 bg-zinc-950/90">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 font-mono text-[11px] text-zinc-600 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>
-            engine: original <span className="text-zinc-400">&quot;Dumping LIB R3&quot;</span> C++
-            sources · ELFIO · Emscripten · web worker
-          </p>
-          <p>
-            your files never leave this tab —{' '}
-            <span className="text-emerald-700">no upload, no telemetry</span>
-          </p>
+      <header className="flex h-12 shrink-0 items-center justify-between border-b px-4">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <svg viewBox="0 0 64 64" className="h-5 w-5 shrink-0" aria-hidden="true">
+            <rect x="4" y="10" width="56" height="44" rx="8" fill="none" stroke="#3b82f6" strokeWidth="6"/>
+            <path d="M16 24 L28 36 L16 48" fill="none" stroke="#60a5fa" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"/>
+            <line x1="33" y1="48" x2="48" y2="48" stroke="#93c5fd" strokeWidth="6" strokeLinecap="round"/>
+          </svg>
+          <span className="truncate text-[13px] font-semibold tracking-tight">
+            Dumping LIB R3
+          </span>
+          <span className="hidden shrink-0 rounded bg-secondary px-1.5 py-px text-[10px] font-medium text-muted-foreground sm:inline">
+            WASM
+          </span>
         </div>
-      </footer>
+        <a
+          href="https://github.com/Virusmodz/dumping-lib-r3"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="GitHub repository"
+          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <Github className="h-4 w-4" aria-hidden="true" />
+        </a>
+      </header>
+
+      {entries.length === 0 ? (
+        <UploadZone
+          onFiles={enqueueFiles}
+          onSample={onSample}
+          busy={sampleBusy}
+          sampleSize={SAMPLE_SIZE}
+        />
+      ) : (
+        <>
+          <FileTabs
+            items={entries}
+            activeId={activeId}
+            onSelect={setActiveId}
+            onRemove={removeEntry}
+            onAdd={onAddClick}
+          />
+
+          <div className="flex min-h-0 flex-1 flex-col">
+            {active === null && (
+              <p className="py-16 text-center text-xs text-muted-foreground">
+                Select a file
+              </p>
+            )}
+
+            {active?.status === 'queued' && (
+              <div className="flex items-center justify-center gap-2 py-16" aria-busy="true">
+                <Skeleton className="h-3.5 w-3.5 rounded-full" />
+                <p className="text-xs text-muted-foreground">{active.fileName} — queued</p>
+              </div>
+            )}
+
+            {active?.status === 'analyzing' && (
+              <div className="flex flex-col items-center justify-center gap-4 py-16" aria-busy="true" aria-label="Parsing">
+                <p className="text-xs text-muted-foreground">Analyzing {active.fileName}…</p>
+                <div className="w-64 space-y-2">
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-6 w-1/2" />
+                </div>
+              </div>
+            )}
+
+            {active?.status === 'error' && (
+              <div className="flex flex-col items-center justify-center gap-3 py-16 px-4">
+                <TriangleAlert className="h-5 w-5 text-destructive" aria-hidden="true" />
+                <p className="text-sm font-medium">Analysis failed — {active.fileName}</p>
+                <p className="max-w-md break-all text-center font-mono text-xs text-muted-foreground">
+                  {active.error}
+                </p>
+              </div>
+            )}
+
+            {active?.status === 'done' && active.result && (
+              <>
+                <StatsBar
+                  fileName={active.result.fileName}
+                  fileSize={active.result.fileSize}
+                  analysis={active.result.analysis}
+                  durationMs={active.result.durationMs}
+                  engine={active.result.engine}
+                />
+
+                <Tabs defaultValue="explorer" className="flex min-h-0 flex-1 flex-col">
+                  <TabsList className="h-9 w-full shrink-0 justify-start gap-0 rounded-none border-b bg-transparent p-0">
+                    <TabsTrigger
+                      value="explorer"
+                      className="rounded-none border-b-2 border-transparent bg-transparent px-4 text-xs shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                    >
+                      Classes
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="vtables"
+                      className="rounded-none border-b-2 border-transparent bg-transparent px-4 text-xs shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                    >
+                      Vtables
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="symbols"
+                      className="rounded-none border-b-2 border-transparent bg-transparent px-4 text-xs shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                    >
+                      Symbols
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="dump"
+                      className="rounded-none border-b-2 border-transparent bg-transparent px-4 font-mono text-xs shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                    >
+                      dump.cpp
+                    </TabsTrigger>
+                    <div className="ml-auto flex items-center pr-2">
+                      <ExportMenu result={active.result} />
+                    </div>
+                  </TabsList>
+
+                  <TabsContent value="explorer" className="mt-0 flex min-h-0 flex-1 flex-col">
+                    <ClassExplorer classes={active.result.analysis.classes} />
+                  </TabsContent>
+
+                  <TabsContent value="vtables" className="mt-0 flex min-h-0 flex-1 flex-col">
+                    <Vtables vtables={active.result.analysis.vtables} />
+                  </TabsContent>
+
+                  <TabsContent value="symbols" className="mt-0 flex min-h-0 flex-1 flex-col">
+                    <SymbolsTab
+                      freeFuncs={active.result.analysis.freeFuncs}
+                      objects={active.result.analysis.objects}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="dump" className="mt-0 flex min-h-0 flex-1 flex-col">
+                    <DumpView
+                      dump={active.result.dump}
+                      fileName={active.result.fileName}
+                      classCount={
+                        active.result.analysis.dumpClassCount ??
+                        active.result.analysis.classCount
+                      }
+                    />
+                  </TabsContent>
+                </Tabs>
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

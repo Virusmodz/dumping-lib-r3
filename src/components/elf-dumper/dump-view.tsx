@@ -3,29 +3,29 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Check, Copy, FileCode2 } from 'lucide-react';
+import { downloadDump } from '@/lib/elf-dumper';
+import { Check, Copy, Download } from 'lucide-react';
 
 interface DumpViewProps {
   dump: string;
+  fileName: string;
   classCount: number;
 }
 
 /**
- * Hard cap on rendered lines — real-world dumps (e.g. libcocos2dcpp.so)
- * exceed 100k lines; rendering them all would freeze the tab. The copy /
- * download buttons always operate on the FULL text, only the preview is
- * capped.
+ * Hard cap on rendered lines — real-world dumps exceed 100k lines; rendering
+ * them all would freeze the tab. Copy/download always use the FULL text.
  */
 const MAX_RENDERED_LINES = 5000;
 
 function lineClass(line: string): string {
-  if (/^\/\/ =+$/.test(line)) return 'text-emerald-900'; // section separator
-  if (/^class\s/.test(line)) return 'text-emerald-400 font-semibold';
-  if (/^public:/.test(line)) return 'text-sky-400';
-  if (/^\};/.test(line)) return 'text-zinc-500';
-  if (/^    static void\*/.test(line)) return 'text-amber-300';
-  if (/^\s*\/\//.test(line)) return 'text-zinc-600'; // Offset | Size | Type | Mangled
-  return 'text-zinc-300';
+  if (/^\/\/ =+$/.test(line)) return 'text-muted-foreground/30'; // section separator
+  if (/^class\s/.test(line)) return 'text-blue-300';
+  if (/^public:/.test(line)) return 'text-muted-foreground';
+  if (/^\};/.test(line)) return 'text-muted-foreground/60';
+  if (/^    static void\*/.test(line)) return 'text-amber-200/80';
+  if (/^\s*\/\//.test(line)) return 'text-muted-foreground/60'; // Offset | Size | Type | Mangled
+  return 'text-zinc-400';
 }
 
 function CodeBlock({ dump }: { dump: string }) {
@@ -33,42 +33,30 @@ function CodeBlock({ dump }: { dump: string }) {
   const truncated = lines.length > MAX_RENDERED_LINES;
   const shown = truncated ? lines.slice(0, MAX_RENDERED_LINES) : lines;
   return (
-    <pre className="p-0">
-      <code className="block font-mono text-xs leading-relaxed">
-        {shown.map((line, i) => (
-          <span key={i} className="flex">
-            <span
-              className="w-10 shrink-0 select-none pr-3 text-right text-zinc-700"
-              aria-hidden="true"
-            >
-              {i + 1}
-            </span>
-            <span className={`${lineClass(line)} whitespace-pre-wrap break-all pl-1`}>
-              {line === '' ? ' ' : line}
-            </span>
+    <div className="py-2 font-mono text-xs leading-[1.5]">
+      {shown.map((line, i) => (
+        <div key={i} className="flex">
+          <span className="w-12 shrink-0 select-none pr-3 text-right text-muted-foreground/30" aria-hidden="true">
+            {i + 1}
           </span>
-        ))}
-        {truncated && (
-          <span className="flex">
-            <span
-              className="w-10 shrink-0 select-none pr-3 text-right text-zinc-700"
-              aria-hidden="true"
-            >
-              …
-            </span>
-            <span className="pl-1 text-zinc-500 italic">
-              preview truncated at {MAX_RENDERED_LINES.toLocaleString()} of{' '}
-              {lines.length.toLocaleString()} lines — use copy / download to get
-              the complete dump
-            </span>
+          <span className={`${lineClass(line)} whitespace-pre-wrap break-all pl-1`}>
+            {line === '' ? ' ' : line}
           </span>
-        )}
-      </code>
-    </pre>
+        </div>
+      ))}
+      {truncated && (
+        <div className="flex">
+          <span className="w-12 shrink-0 select-none pr-3 text-right text-muted-foreground/30" aria-hidden="true">…</span>
+          <span className="pl-1 text-muted-foreground/70">
+            {lines.length.toLocaleString()} lines total — use copy or download for the full dump
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
 
-export function DumpView({ dump, classCount }: DumpViewProps) {
+export function DumpView({ dump, fileName, classCount }: DumpViewProps) {
   const [copied, setCopied] = useState(false);
 
   const onCopy = async () => {
@@ -84,36 +72,42 @@ export function DumpView({ dump, classCount }: DumpViewProps) {
   const byteLen = useMemo(() => new TextEncoder().encode(dump).length, [dump]);
 
   return (
-    <div className="flex h-full flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="flex items-center gap-2 font-mono text-xs text-zinc-500">
-          <FileCode2 className="h-4 w-4 text-emerald-600" aria-hidden="true" />
-          {classCount.toLocaleString()} class blocks · {(byteLen / 1024).toFixed(1)} KB generated
-        </p>
-        <div className="flex gap-2">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex h-10 shrink-0 items-center justify-between gap-2 border-b px-4">
+        <span className="truncate font-mono text-xs text-muted-foreground">
+          dump.cpp
+          <span className="ml-3 tabular-nums">
+            {classCount.toLocaleString()} classes · {(byteLen / 1024).toFixed(1)} KB
+          </span>
+        </span>
+        <div className="flex shrink-0 gap-1.5">
           <Button
             size="sm"
-            variant="outline"
-            className="border-zinc-700 bg-zinc-900 font-mono text-xs text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+            variant="ghost"
+            className="h-7 px-2.5 text-xs"
             onClick={onCopy}
           >
             {copied ? (
-              <>
-                <Check className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" /> copied
-              </>
+              <Check className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
             ) : (
-              <>
-                <Copy className="h-3.5 w-3.5" aria-hidden="true" /> copy
-              </>
+              <Copy className="h-3.5 w-3.5" aria-hidden="true" />
             )}
+            {copied ? 'Copied' : 'Copy'}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 px-2.5 text-xs"
+            onClick={() => downloadDump(fileName, dump)}
+          >
+            <Download className="h-3.5 w-3.5" aria-hidden="true" />
+            Download
           </Button>
         </div>
       </div>
 
-      <ScrollArea className="h-[460px] flex-1 rounded-lg border border-zinc-800/60 bg-zinc-950/70">
-        <div className="p-4">
-          <CodeBlock dump={dump} />
-        </div>
+      <ScrollArea className="min-h-0 flex-1 bg-card/40">
+        <CodeBlock dump={dump} />
       </ScrollArea>
     </div>
   );

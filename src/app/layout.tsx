@@ -14,18 +14,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dumping LIB R3 — WebAssembly ELF Class Dumper",
-  description: "Drop an ELF shared library (.so) and extract its C++ class skeletons with method offsets — the original Dumping LIB R3 C++ tool compiled to WebAssembly, running fully in your browser.",
-  keywords: ["ELF", "WebAssembly", "reverse engineering", "shared library", "symbol dumper", "demangle", "Emscripten", "C++"],
-  authors: [{ name: "Dumping LIB R3" }],
+  title: "Dumping LIB R3 — ELF Class Dumper",
+  description:
+    "Analyze ELF shared libraries in the browser: class skeletons with offsets, vtables, and global symbols.",
   icons: {
     icon: `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/favicon.svg`,
-  },
-  openGraph: {
-    title: "Dumping LIB R3 — WebAssembly Edition",
-    description: "Reverse-engineer native libraries into C++ class skeletons, 100% client-side via WebAssembly.",
-    siteName: "Dumping LIB R3",
-    type: "website",
   },
 };
 
@@ -35,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
