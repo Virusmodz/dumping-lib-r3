@@ -33,7 +33,7 @@ export function UploadZone({ onFiles, onSample, busy, sampleSize }: UploadZonePr
           className={`rounded-lg border p-10 text-center transition-colors cursor-pointer focus:outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 ${
             dragging
               ? 'border-primary/50 bg-primary/5'
-              : 'border-input bg-accent/20 hover:border-muted-foreground/30 hover:bg-accent/40'
+              : 'border-input bg-accent/20 hover:border-muted-foreground/40 hover:bg-accent/40'
           } ${busy ? 'pointer-events-none opacity-60' : ''}`}
           onDragOver={(e) => {
             e.preventDefault();
@@ -66,26 +66,26 @@ export function UploadZone({ onFiles, onSample, busy, sampleSize }: UploadZonePr
           />
           <FileUp className="mx-auto h-6 w-6 text-muted-foreground" aria-hidden="true" />
           <p className="mt-3 text-sm font-medium">
-            {busy ? 'Loading sample…' : 'Drop ELF binaries'}
+            {busy ? 'Loading sample…' : 'Drop ELF binaries here'}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            or click to browse · .so .o .a
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            or click to browse <span className="font-mono">(.so, .o, .a)</span>
           </p>
         </div>
 
-        <div className="mt-3 text-center">
+        <div className="mt-4 text-center">
           <button
             type="button"
-            className="text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline disabled:pointer-events-none disabled:opacity-50"
+            className="rounded-sm text-xs text-foreground/75 underline-offset-4 transition-colors hover:text-foreground hover:underline disabled:pointer-events-none disabled:opacity-50"
             onClick={onSample}
             disabled={busy}
           >
-            Try sample · game-sdk.so ({formatBytes(sampleSize)})
+            Try sample — <span className="font-mono">game-sdk.so</span> ({formatBytes(sampleSize)})
           </button>
         </div>
 
-        <p className="mt-8 text-center text-[11px] text-muted-foreground/60">
-          Analysis runs locally in your browser — files are never uploaded.
+        <p className="mt-6 text-center text-[11px] text-muted-foreground">
+          100% local — files never leave your browser
         </p>
       </div>
     </div>

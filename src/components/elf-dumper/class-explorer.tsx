@@ -46,7 +46,10 @@ function ClassRow({ cls, query }: { cls: ElfClass; query: string }) {
         <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground/90">
           {highlight(cls.name, query)}
         </span>
-        <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+        <span
+          className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
+          title={`${cls.methods.length} methods`}
+        >
           {cls.methods.length}
         </span>
       </button>
@@ -101,7 +104,7 @@ export function ClassExplorer({ classes }: ClassExplorerProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Filter classes and methods"
-          className="h-10 rounded-none border-0 bg-transparent pl-9 text-xs shadow-none focus-visible:ring-0 focus-visible:border-transparent dark:bg-transparent"
+          className="h-10 rounded-none border-0 bg-secondary/40 pl-9 pr-16 text-xs shadow-none transition-colors hover:bg-secondary/60 focus-visible:bg-secondary/60 focus-visible:ring-0 focus-visible:border-transparent dark:bg-secondary/40"
           aria-label="Filter classes and methods"
         />
         <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[11px] tabular-nums text-muted-foreground/70">

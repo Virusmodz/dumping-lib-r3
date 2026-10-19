@@ -34,7 +34,10 @@ function VtableRow({ vt, query }: { vt: ElfVtable; query: string }) {
         <span className="hidden shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground/70 sm:inline">
           {vt.o}
         </span>
-        <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+        <span
+          className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
+          title={`${vt.e.length} virtual functions`}
+        >
           {vt.e.length}
         </span>
       </button>
@@ -100,7 +103,7 @@ export function Vtables({ vtables }: VtablesProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Filter vtables and virtual functions"
-          className="h-10 rounded-none border-0 bg-transparent pl-9 text-xs shadow-none focus-visible:ring-0 focus-visible:border-transparent dark:bg-transparent"
+          className="h-10 rounded-none border-0 bg-secondary/40 pl-9 pr-16 text-xs shadow-none transition-colors hover:bg-secondary/60 focus-visible:bg-secondary/60 focus-visible:ring-0 focus-visible:border-transparent dark:bg-secondary/40"
           aria-label="Filter vtables"
         />
         <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[11px] tabular-nums text-muted-foreground/70">

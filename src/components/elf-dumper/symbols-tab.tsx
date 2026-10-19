@@ -43,7 +43,7 @@ export function SymbolsTab({ freeFuncs, objects }: SymbolsTabProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Filter symbols"
-          className="h-10 rounded-none border-0 bg-transparent pl-9 text-xs shadow-none focus-visible:ring-0 focus-visible:border-transparent dark:bg-transparent"
+          className="h-10 rounded-none border-0 bg-secondary/40 pl-9 pr-16 text-xs shadow-none transition-colors hover:bg-secondary/60 focus-visible:bg-secondary/60 focus-visible:ring-0 focus-visible:border-transparent dark:bg-secondary/40"
           aria-label="Filter symbols"
         />
         <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[11px] tabular-nums text-muted-foreground/70">

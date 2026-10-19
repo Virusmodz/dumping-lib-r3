@@ -205,9 +205,6 @@ export default function Home() {
           <span className="truncate text-[13px] font-semibold tracking-tight">
             Dumping LIB R3
           </span>
-          <span className="hidden shrink-0 rounded bg-secondary px-1.5 py-px text-[10px] font-medium text-muted-foreground sm:inline">
-            WASM
-          </span>
         </div>
         <a
           href="https://github.com/Virusmodz/dumping-lib-r3"
@@ -286,25 +283,25 @@ export default function Home() {
                   <TabsList className="h-9 w-full shrink-0 justify-start gap-0 rounded-none border-b bg-transparent p-0">
                     <TabsTrigger
                       value="explorer"
-                      className="rounded-none border-b-2 border-transparent bg-transparent px-4 text-xs shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                      className="h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 text-xs text-muted-foreground shadow-none transition-colors hover:bg-accent/60 hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
                     >
                       Classes
                     </TabsTrigger>
                     <TabsTrigger
                       value="vtables"
-                      className="rounded-none border-b-2 border-transparent bg-transparent px-4 text-xs shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                      className="h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 text-xs text-muted-foreground shadow-none transition-colors hover:bg-accent/60 hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
                     >
                       Vtables
                     </TabsTrigger>
                     <TabsTrigger
                       value="symbols"
-                      className="rounded-none border-b-2 border-transparent bg-transparent px-4 text-xs shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                      className="h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 text-xs text-muted-foreground shadow-none transition-colors hover:bg-accent/60 hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
                     >
                       Symbols
                     </TabsTrigger>
                     <TabsTrigger
                       value="dump"
-                      className="rounded-none border-b-2 border-transparent bg-transparent px-4 font-mono text-xs shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                      className="h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 font-mono text-xs text-muted-foreground shadow-none transition-colors hover:bg-accent/60 hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
                     >
                       dump.cpp
                     </TabsTrigger>
